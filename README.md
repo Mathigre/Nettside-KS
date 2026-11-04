@@ -11,13 +11,13 @@ Responsiv nettbutikkdemo for konseptet Hjertekraft. Sortiment og priser som vise
 
 ## Teknologi
 
-Statisk HTML/CSS/JavaScript hostes på GitHub Pages. Supabase leverer Auth, Postgres, Storage og Edge Functions. `config.js` inneholder bare den offentlige Supabase URL-en og publishable key. Ingen servernøkler skal legges i repoet eller nettleseren.
+Statisk HTML/CSS/JavaScript er publisert på Sites: https://hjertekraft-nettbutikk.minsten-mg.chatgpt.site. Kildekoden vedlikeholdes på GitHub. Supabase leverer Auth, Postgres, Storage og Edge Functions. `config.js` inneholder bare den offentlige Supabase URL-en og publishable key. Ingen servernøkler skal legges i repoet eller nettleseren.
 
 ## Supabase-oppsett
 
 Databasen `Nettside KS` har RLS aktivert på katalog, ordre og kontaktmeldinger. Migrasjonene finnes under `supabase/migrations/` og Edge Function-koden under `supabase/functions/`.
 
-Sett Supabase Authentication → URL Configuration til nettbutikkens publiserte adresse (`https://mathigre.github.io/Nettside-KS/`) og legg til samme URL som tillatt redirect før passordtilbakestilling eller e-postbasert innlogging tas i bruk. Adminpassord opprettes og beholdes i Supabase Auth.
+Sett Supabase Authentication → URL Configuration til nettbutikkens publiserte adresse (`https://hjertekraft-nettbutikk.minsten-mg.chatgpt.site`) og legg til samme URL som tillatt redirect før passordtilbakestilling eller e-postbasert innlogging tas i bruk. Adminpassord opprettes og beholdes i Supabase Auth.
 
 Legg inn secrets i Supabase Dashboard → Project Settings → Edge Functions → Secrets:
 
@@ -64,4 +64,5 @@ Bruk bare Stripe-nøkler med `sk_test_` i denne demoen. Kassen oppretter ordren 
 
 ## Publisering
 
-GitHub Actions publiserer filer fra repoets rot til GitHub Pages på hver push til `main`. Forventet URL er `https://mathigre.github.io/Nettside-KS/`.
+Den offentlige demoen er publisert på Sites. GitHub Pages-workflowen ligger også i repoet, men krever at Pages er aktivert i GitHub-innstillingene. Aktiv demo-URL er `https://hjertekraft-nettbutikk.minsten-mg.chatgpt.site`.
+
