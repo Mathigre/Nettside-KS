@@ -1,5 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
-import { STORE_CONFIG } from '../config.js';
+import { STORE_CONFIG } from './config.js';
 
 const db = createClient(STORE_CONFIG.supabaseUrl, STORE_CONFIG.supabasePublishableKey);
 const loginView = document.querySelector('[data-login-view]');
@@ -137,3 +137,4 @@ document.querySelector('.admin-tabs').addEventListener('click', event => {
 document.querySelectorAll('[data-refresh]').forEach(button => button.addEventListener('click', () => button.dataset.refresh === 'orders' ? loadOrders() : loadMessages()));
 db.auth.getSession().then(({ data }) => showSession(data.session));
 db.auth.onAuthStateChange((_event, session) => { if (!session) showSession(null); });
+
