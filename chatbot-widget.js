@@ -21,6 +21,17 @@ if (!document.getElementById('hjertekraft-chat')) {
   const messagesEl = root.querySelector('.messages');
   const status = root.querySelector('.status');
   const conversation = [];
+  const suggestions = document.createElement('div');
+  suggestions.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;padding:8px 14px';
+  for (const question of ['Hva er Hjertekraft?', 'Hvordan prøver jeg testbetaling?', 'Er produktene ekte?', 'Hva kan jeg gjøre i admin?', 'Hvordan kontakter jeg dere?']) {
+    const suggestion = document.createElement('button');
+    suggestion.type = 'button';
+    suggestion.textContent = question;
+    suggestion.style.cssText = 'border:1px solid #eadfe3;border-radius:16px;background:#fff8fa;padding:7px 10px;color:#51434b;font-size:11px;cursor:pointer';
+    suggestion.addEventListener('click', () => { if (send.disabled) return; input.value = question; form.requestSubmit(); });
+    suggestions.append(suggestion);
+  }
+  form.before(suggestions);
   function add(role, value) { const bubble=document.createElement('div'); bubble.className=`bubble ${role==='user'?'user':'bot'}`; bubble.textContent=value; messagesEl.append(bubble); messagesEl.scrollTop=messagesEl.scrollHeight; }
   function open(value) { panel.hidden=!value; launcher.setAttribute('aria-expanded',String(value)); if(value)input.focus(); else launcher.focus(); }
   launcher.addEventListener('click',()=>open(panel.hidden));
