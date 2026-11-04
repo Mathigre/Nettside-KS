@@ -50,7 +50,16 @@ form.addEventListener('submit', async event => {
       items: rows.map(row => ({ product_id: row.id, quantity: row.quantity })),
     },
   });
-  if (error || !data?.url) { button.disabled = false; status.textContent = data?.error || 'Betaling er ikke aktivert ennå. Kontakt oss hvis dette er en testbestilling.'; return; }
+  if (error || !data?.url) {
+    let detail = data?.error;
+    if (!detail && error?.context instanceof Response) {
+      try { const failure = await error.context.json(); detail = failure.error || failure.message; } catch { /* Network or non-JSON error. */ }
+    }
+    button.disabled = false;
+    status.textContent = detail || 'Kunne ikke kontakte betalingstjenesten. Oppdater siden og prøv igjen.';
+    return;
+  }
   location.assign(data.url);
 });
 loadCart().catch(error => { document.querySelector('[data-checkout-items]').textContent = error.message; button.disabled = true; });
+
