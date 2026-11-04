@@ -79,7 +79,7 @@ async function loadCatalog() {
     const published = productResult.data || [];
     const realProducts = published.filter(item => !item.is_demo);
     demoMode = realProducts.length === 0;
-    products = realProducts.length ? realProducts : published.map(item => ({ ...item, demo: Boolean(item.is_demo) }));
+    products = published.map(item => ({ ...item, demo: Boolean(item.is_demo) }));
   }
   if (!products.length) { demoMode = true; products = demoProducts; if (!categories.length) categories = demoCategories; }
   cart = cart.filter(line => products.some(item => item.id === line.id));
@@ -121,3 +121,4 @@ document.querySelector('[data-checkout]')?.addEventListener('click', () => {
 });
 renderCart();
 loadCatalog().catch(() => { if (productGrid) productGrid.innerHTML = '<p class="catalog-message">Vi klarte ikke å hente butikken akkurat nå. Prøv igjen om litt.</p>'; });
+
