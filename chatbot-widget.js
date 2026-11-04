@@ -1,8 +1,8 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
-import { STORE_CONFIG } from './config.js';
+
+
 
 if (!document.getElementById('hjertekraft-chat')) {
-  const db = createClient(STORE_CONFIG.supabaseUrl, STORE_CONFIG.supabasePublishableKey);
+
   const host = document.createElement('div');
   host.id = 'hjertekraft-chat';
   document.body.append(host);
@@ -29,7 +29,7 @@ if (!document.getElementById('hjertekraft-chat')) {
     event.preventDefault(); const message=input.value.trim(); if(!message||send.disabled)return;
     conversation.push({role:'user',content:message}); add('user',message); input.value=''; send.disabled=true; status.textContent='Skriver svar …';
     try {
-      const {data,error}=await db.functions.invoke('store-assistant',{body:{messages:conversation.slice(-8)}});
+      const response=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:conversation.slice(-8)})}); const data=await response.json(); const error=!response.ok;
       if(error||typeof data?.answer!=='string')throw new Error('not-ready');
       conversation.push({role:'assistant',content:data.answer}); add('assistant',data.answer); status.textContent='';
     } catch { status.textContent='Hjelperen er ikke aktiv ennå. Du kan bruke kontaktsiden for spørsmål.'; }
@@ -37,3 +37,4 @@ if (!document.getElementById('hjertekraft-chat')) {
   });
   document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!panel.hidden)open(false);});
 }
+
