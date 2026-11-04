@@ -125,4 +125,3 @@ create policy "Store admins update product images" on storage.objects for update
 drop policy if exists "Store admins delete product images" on storage.objects;
 create policy "Store admins delete product images" on storage.objects for delete to authenticated
   using (bucket_id = 'store-products' and ((select auth.jwt())->'app_metadata'->>'store_admin') = 'true');
-

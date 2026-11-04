@@ -4,6 +4,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 const cors = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type", "Access-Control-Allow-Methods": "POST, OPTIONS", "Content-Type": "application/json; charset=utf-8" };
 const reply = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: cors });
 const service = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
+const startRate = new Map<string, { count: number; reset: number }>();
 
 async function vippsToken() {
   const api = Deno.env.get("VIPPS_API_URL") || "https://apitest.vipps.no";
@@ -19,6 +20,11 @@ async function vippsToken() {
 Deno.serve(async request => {
   if (request.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (request.method !== "POST") return reply({ error: "Method not allowed" }, 405);
+  const ip = request.headers.get("cf-connecting-ip") || request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  const now = Date.now();
+  const bucket = startRate.get(ip);
+  if (bucket && bucket.reset > now && bucket.count >= 10) return reply({ error: "For mange betalingsforsøk. Vent litt og prøv igjen." }, 429);
+  startRate.set(ip, !bucket || bucket.reset <= now ? { count: 1, reset: now + 60000 } : { count: bucket.count + 1, reset: bucket.reset });
   if (Deno.env.get("CHECKOUT_ENABLED") !== "true") return reply({ error: "Test checkout is not enabled yet." }, 503);
   const base = Deno.env.get("STORE_BASE_URL");
   if (!base || !base.startsWith("https://")) return reply({ error: "Store URL is not configured." }, 503);
@@ -99,4 +105,3 @@ Deno.serve(async request => {
     return reply({ error: "Betalingen kunne ikke startes. Kontroller testoppsettet og prøv igjen." }, 502);
   }
 });
-

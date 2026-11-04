@@ -17,4 +17,3 @@ else {
   else if (result?.status === 'failed') { title.textContent = 'Betalingen ble ikke fullført'; copy.textContent = 'Ingen betaling er registrert. Du kan prøve igjen fra handlekurven.'; }
   else { title.textContent = 'Vi venter på bekreftelse'; copy.textContent = 'Betalingsstatusen kan ta litt tid. Ordrenummer vises i admin så snart betalingen er oppdatert.'; }
 }
-

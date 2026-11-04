@@ -17,6 +17,8 @@ Statisk HTML/CSS/JavaScript hostes på GitHub Pages. Supabase leverer Auth, Post
 
 Databasen `Nettside KS` har RLS aktivert på katalog, ordre og kontaktmeldinger. Migrasjonene finnes under `supabase/migrations/` og Edge Function-koden under `supabase/functions/`.
 
+Sett Supabase Authentication → URL Configuration til nettbutikkens publiserte adresse (`https://mathigre.github.io/Nettside-KS/`) og legg til samme URL som tillatt redirect før passordtilbakestilling eller e-postbasert innlogging tas i bruk. Adminpassord opprettes og beholdes i Supabase Auth.
+
 Legg inn secrets i Supabase Dashboard → Project Settings → Edge Functions → Secrets:
 
 | Secret | Bruk |
@@ -58,9 +60,8 @@ where email = 'ADMINENS-EPOST';
 
 ### Stripe testmodus
 
-Bruk bare Stripe-nøkler med `sk_test_` i denne demoen. Kassen oppretter ordren på serversiden, beregner pris fra Supabase-katalogen, og Stripe webhook bekrefter betaling. Vipps godkjenner først beløpet; admin kan deretter trekke reservasjonen fra ordrelisten.
+Bruk bare Stripe-nøkler med `sk_test_` i denne demoen. Kassen oppretter ordren på serversiden, beregner pris fra Supabase-katalogen, og Stripe webhook bekrefter betaling. Vipps godkjenner først beløpet; admin kan deretter trekke reservasjonen fra ordrelisten. Eksempelvarer merket «Demovare» kan aldri kjøpes.
 
 ## Publisering
 
 GitHub Actions publiserer filer fra repoets rot til GitHub Pages på hver push til `main`. Forventet URL er `https://mathigre.github.io/Nettside-KS/`.
-

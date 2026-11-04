@@ -13,4 +13,3 @@ if (menuToggle && mainNav) {
     mainNav.classList.remove('is-open');
   });
 }
-

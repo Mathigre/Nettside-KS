@@ -35,4 +35,3 @@ Deno.serve(async request => {
   }
   return Response.json({ received: true });
 });
-

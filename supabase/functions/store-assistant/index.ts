@@ -8,7 +8,7 @@ const corsHeaders = {
 };
 
 const instructions = `Du er Hjertekraft sin korte, vennlige butikkassistent. Du svarer på norsk bokmål, enkelt og presist. Dette nettstedet er en nettbutikkdemo. Varene, prisene, levering, retur og betalingsknappene kan være eksempelinnhold; ikke presenter dem som virkelige tilbud. Konsept og sortiment er ikke ferdig valgt. Ikke finn på produkter, lagerstatus, åpningstider, frakt, priser eller returvilkår. Si tydelig fra hvis informasjonen ikke finnes, og vis til kontaktsiden. Ikke be om sensitive opplysninger eller betalingsinformasjon. Maks 3 korte setninger per svar.`;
-const allowedOrigins = new Set(["https://mathigre.github.io", "http://localhost:8000", "http://localhost:5500", "http://127.0.0.1:5500"]);
+const allowedOrigins = new Set(["https://hjertekraft-nettbutikk.minsten-mg.chatgpt.site", "https://mathigre.github.io", "http://localhost:8000", "http://localhost:5500", "http://127.0.0.1:5500"]);
 const rate = new Map<string, { count: number; reset: number }>();
 
 Deno.serve(async (request) => {
@@ -47,4 +47,3 @@ Deno.serve(async (request) => {
     return Response.json({ error: "Could not create a reply" }, { status: 502, headers: corsHeaders });
   }
 });
-

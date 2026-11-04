@@ -37,4 +37,3 @@ if (!document.getElementById('hjertekraft-chat')) {
   });
   document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!panel.hidden)open(false);});
 }
-

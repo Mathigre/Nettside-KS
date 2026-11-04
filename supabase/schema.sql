@@ -1,4 +1,4 @@
--- Hjertekraft store foundation. This project is new and has no existing public tables.
+-- Hjertekraft store foundation. Apply the ordered SQL migrations in supabase/migrations for the deployed project.
 
 create table if not exists public.categories (
   id uuid primary key default gen_random_uuid(),
@@ -22,6 +22,7 @@ create table if not exists public.products (
   stock_quantity integer check (stock_quantity is null or stock_quantity >= 0),
   is_featured boolean not null default false,
   is_published boolean not null default false,
+  is_demo boolean not null default false,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -38,7 +39,7 @@ create table if not exists public.orders (
   shipping_ore integer not null default 0 check (shipping_ore >= 0),
   total_ore integer not null check (total_ore = subtotal_ore + shipping_ore),
   payment_provider text check (payment_provider in ('stripe', 'vipps')),
-  payment_status text not null default 'pending' check (payment_status in ('pending', 'paid', 'failed', 'refunded')),
+  payment_status text not null default 'pending' check (payment_status in ('pending', 'authorized', 'paid', 'failed', 'refunded')),
   fulfillment_status text not null default 'new' check (fulfillment_status in ('new', 'processing', 'sent', 'completed', 'cancelled')),
   provider_reference text unique,
   created_at timestamptz not null default now(),
@@ -140,4 +141,3 @@ grant select on public.categories to anon, authenticated;
 grant select on public.products to anon, authenticated;
 grant insert on public.contact_messages to anon, authenticated;
 grant all on public.categories, public.products, public.orders, public.order_items, public.contact_messages to authenticated;
-

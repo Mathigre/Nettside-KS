@@ -21,4 +21,3 @@ if (form) {
     form.reset(); status.textContent = 'Takk — meldingen er sendt. Vi tar kontakt så snart vi kan.';
   });
 }
-

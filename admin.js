@@ -30,9 +30,9 @@ async function loadCategories() {
 }
 async function loadProducts() {
   const list = document.querySelector('[data-product-list]');
-  const { data, error } = await db.from('products').select('id,name,price_ore,is_published,stock_quantity').order('created_at', { ascending: false });
+  const { data, error } = await db.from('products').select('id,name,price_ore,is_published,is_demo,stock_quantity').order('created_at', { ascending: false });
   if (error) { list.innerHTML = '<p>Kunne ikke hente produkter.</p>'; return; }
-  list.innerHTML = data.length ? data.map(row => `<div class="admin-row"><div><strong>${escapeHtml(row.name)}</strong><small>${new Intl.NumberFormat('nb-NO').format(row.price_ore / 100)} kr · ${row.is_published ? 'Synlig' : 'Skjult'} · ${row.stock_quantity === null ? 'Lager ikke angitt' : `${row.stock_quantity} på lager`}</small></div><span class="admin-row-actions"><button data-edit-product="${row.id}">Rediger</button><button data-delete-product="${row.id}">Slett</button></span></div>`).join('') : '<p>Ingen produkter ennå. Legg til det første når dere har valgt hva som skal selges.</p>';
+  list.innerHTML = data.length ? data.map(row => `<div class="admin-row"><div><strong>${escapeHtml(row.name)}</strong><small>${new Intl.NumberFormat('nb-NO').format(row.price_ore / 100)} kr · ${row.is_demo ? 'Eksempelvare' : row.is_published ? 'Synlig' : 'Skjult'} · ${row.stock_quantity === null ? 'Lager ikke angitt' : `${row.stock_quantity} på lager`}</small></div><span class="admin-row-actions"><button data-edit-product="${row.id}">Rediger</button><button data-delete-product="${row.id}">Slett</button></span></div>`).join('') : '<p>Ingen produkter ennå. Legg til det første når dere har valgt hva som skal selges.</p>';
 }
 async function openProduct(id = '') {
   productForm.hidden = false; productStatus.textContent = ''; productForm.reset(); productForm.elements.id.value = id;
@@ -45,6 +45,7 @@ async function openProduct(id = '') {
   productForm.elements.images.value = (data.images || []).join('\n');
   productForm.elements.is_featured.checked = data.is_featured;
   productForm.elements.is_published.checked = data.is_published;
+  productForm.elements.is_demo.checked = Boolean(data.is_demo);
 }
 async function loadMessages() {
   const list = document.querySelector('[data-message-list]');
@@ -54,6 +55,8 @@ async function loadMessages() {
 }
 async function loadOrders() {
   const list = document.querySelector('[data-order-list]');
+  const { data: pending } = await db.from('orders').select('id').eq('payment_status', 'pending').order('created_at', { ascending: false }).limit(10);
+  if (pending?.length) await Promise.all(pending.map(row => db.functions.invoke('payment-status', { body: { order_id: row.id } })));
   const { data, error } = await db.from('orders').select('id,order_number,customer_name,customer_email,total_ore,payment_provider,payment_status,fulfillment_status,created_at').order('created_at', { ascending: false }).limit(100);
   if (error) { list.innerHTML = '<p>Betaling og bestillinger aktiveres i neste steg.</p>'; return; }
   const paymentLabel = { pending: 'Venter på betaling', authorized: 'Reservert', paid: 'Betalt', failed: 'Feilet', refunded: 'Refundert' };
@@ -99,7 +102,7 @@ productForm.addEventListener('submit', async event => {
     if (uploadError) { productStatus.textContent = 'Bildet kunne ikke lastes opp. Kontroller at Storage er satt opp.'; return; }
     imageUrls.unshift(db.storage.from('store-products').getPublicUrl(path).data.publicUrl);
   }
-  const record = { name, slug: slugBase, short_description: String(values.get('short_description') || '').trim(), description: String(values.get('description') || '').trim(), category_id: values.get('category_id') || null, price_ore: Math.round(price * 100), stock_quantity: stock, images: imageUrls, is_featured: values.has('is_featured'), is_published: values.has('is_published'), updated_at: new Date().toISOString() };
+  const record = { name, slug: slugBase, short_description: String(values.get('short_description') || '').trim(), description: String(values.get('description') || '').trim(), category_id: values.get('category_id') || null, price_ore: Math.round(price * 100), stock_quantity: stock, images: imageUrls, is_demo: values.has('is_demo'), is_featured: values.has('is_featured'), is_published: values.has('is_published'), updated_at: new Date().toISOString() };
   const id = String(values.get('id') || '');
   const result = id ? await db.from('products').update(record).eq('id', id) : await db.from('products').insert(record);
   if (result.error) { productStatus.textContent = result.error.code === '23505' ? 'Det finnes allerede et produkt med dette navnet.' : 'Produktet kunne ikke lagres. Kontroller feltene og prøv igjen.'; return; }
@@ -134,4 +137,3 @@ document.querySelector('.admin-tabs').addEventListener('click', event => {
 document.querySelectorAll('[data-refresh]').forEach(button => button.addEventListener('click', () => button.dataset.refresh === 'orders' ? loadOrders() : loadMessages()));
 db.auth.getSession().then(({ data }) => showSession(data.session));
 db.auth.onAuthStateChange((_event, session) => { if (!session) showSession(null); });
-

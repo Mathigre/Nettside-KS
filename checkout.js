@@ -24,8 +24,9 @@ async function loadCart() {
   demoMode = lines.some(line => line.id.startsWith('demo-'));
   if (demoMode) rows = lines.filter(line => demo[line.id]).map(line => ({ ...line, ...demo[line.id] }));
   else {
-    const { data, error } = await db.from('products').select('id,name,price_ore,is_published').in('id', lines.map(line => line.id));
+    const { data, error } = await db.from('products').select('id,name,price_ore,is_published,is_demo').in('id', lines.map(line => line.id));
     if (error || !data || data.length !== lines.length || data.some(item => !item.is_published)) throw new Error('Kunne ikke hente produktene i handlekurven.');
+    demoMode = data.some(item => item.is_demo);
     rows = lines.map(line => ({ ...line, ...data.find(item => item.id === line.id) }));
   }
   const total = rows.reduce((sum, row) => sum + row.price_ore * row.quantity, 0);
@@ -53,4 +54,3 @@ form.addEventListener('submit', async event => {
   location.assign(data.url);
 });
 loadCart().catch(error => { document.querySelector('[data-checkout-items]').textContent = error.message; button.disabled = true; });
-

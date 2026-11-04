@@ -72,10 +72,15 @@ async function loadCatalog() {
   if (!productGrid) return;
   const [categoryResult, productResult] = await Promise.all([
     db.from('categories').select('id,name,slug,sort_order').order('sort_order'),
-    db.from('products').select('id,name,slug,short_description,price_ore,images,stock_quantity,is_featured,category_id').eq('is_published', true).order('created_at', { ascending: false }),
+    db.from('products').select('id,name,slug,short_description,price_ore,images,stock_quantity,is_featured,is_demo,category_id').eq('is_published', true).order('created_at', { ascending: false }),
   ]);
   if (!categoryResult.error) categories = categoryResult.data || [];
-  if (!productResult.error) products = productResult.data || [];
+  if (!productResult.error) {
+    const published = productResult.data || [];
+    const realProducts = published.filter(item => !item.is_demo);
+    demoMode = realProducts.length === 0;
+    products = realProducts.length ? realProducts : published.map(item => ({ ...item, demo: Boolean(item.is_demo) }));
+  }
   if (!products.length) { demoMode = true; products = demoProducts; if (!categories.length) categories = demoCategories; }
   cart = cart.filter(line => products.some(item => item.id === line.id));
   renderCategories(); renderProducts(); saveCart();
@@ -116,4 +121,3 @@ document.querySelector('[data-checkout]')?.addEventListener('click', () => {
 });
 renderCart();
 loadCatalog().catch(() => { if (productGrid) productGrid.innerHTML = '<p class="catalog-message">Vi klarte ikke å hente butikken akkurat nå. Prøv igjen om litt.</p>'; });
-

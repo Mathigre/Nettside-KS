@@ -39,4 +39,3 @@ Deno.serve(async request => {
   const { data: latest } = await service.from("orders").select("order_number,payment_status").eq("id", orderId).single();
   return reply({ order_number: latest?.order_number, status: latest?.payment_status || order.payment_status });
 });
-

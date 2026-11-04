@@ -34,4 +34,3 @@ Deno.serve(async request => {
     return reply({ ok: true, status: result.state || "CAPTURED" });
   } catch { return reply({ error: "Vipps-testmiljøet svarte ikke." }, 502); }
 });
-

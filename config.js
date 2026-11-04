@@ -3,4 +3,3 @@ export const STORE_CONFIG = Object.freeze({
   supabasePublishableKey: 'sb_publishable_E13AsRBEelZbbpL9NDREBA_KmSatPPc',
   currency: 'NOK',
 });
-
