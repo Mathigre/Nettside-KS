@@ -13,6 +13,30 @@ const form = document.querySelector('[data-checkout-form]');
 const status = document.querySelector('[data-checkout-status]');
 const button = document.querySelector('[data-pay-button]');
 const demoFill = document.querySelector('[data-fill-demo]');
+const testCards = document.createElement('div');
+testCards.className = 'demo-checkout-notice';
+const cardsTitle = document.createElement('strong');
+cardsTitle.textContent = 'Velg testkort for Stripe';
+const cardsHelp = document.createElement('p');
+cardsHelp.textContent = 'Kopier et testkort og lim det inn på Stripe-siden. Bruk en framtidig utløpsdato og tre vilkårlige CVC-sifre. Ingen ekte penger belastes.';
+testCards.append(cardsTitle, cardsHelp);
+for (const [label, number] of [['Vellykket betaling', '4242424242424242'], ['Avvist betaling', '4000000000000002']]) {
+  const copy = document.createElement('button');
+  copy.type = 'button';
+  copy.className = 'button button-light';
+  copy.style.cssText = 'margin:4px 8px 4px 0';
+  copy.textContent = `${label} · kopier testkort`;
+  copy.addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(number); copy.textContent = 'Testkort kopiert ✓'; }
+    catch { copy.textContent = `Testkort: ${number}`; }
+  });
+  testCards.append(copy);
+}
+const paymentFields = form.querySelector('[name="provider"]').closest('fieldset');
+paymentFields.append(testCards);
+function showTestCards() { testCards.hidden = form.elements.provider.value !== 'stripe'; }
+form.addEventListener('change', showTestCards);
+showTestCards();
 demoFill.addEventListener('click', () => {
   const details = { name: 'Demo Kunde', email: 'demo@example.com', phone: '', address: 'Eksempelveien 1', postal_code: '7650', city: 'Verdal' };
   for (const [name, value] of Object.entries(details)) {
@@ -20,6 +44,7 @@ demoFill.addEventListener('click', () => {
     form.elements[name].dispatchEvent(new Event('input', { bubbles: true }));
   }
   form.querySelector('[name="provider"][value="stripe"]').checked = true;
+  showTestCards();
   status.textContent = 'Fiktive kontaktopplysninger er fylt inn. Ingen vare leveres ved testkjøp.';
 });
 const money = value => new Intl.NumberFormat('nb-NO', { style: 'currency', currency: 'NOK', maximumFractionDigits: 0 }).format(value / 100);
