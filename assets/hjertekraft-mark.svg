@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Hjertekraft-symbol">
+  <defs><linearGradient id="petal" x1="9" y1="4" x2="54" y2="57" gradientUnits="userSpaceOnUse"><stop stop-color="#ffbd39"/><stop offset=".42" stop-color="#ff625e"/><stop offset=".7" stop-color="#e94e91"/><stop offset="1" stop-color="#31b8aa"/></linearGradient><linearGradient id="cut" x1="17" y1="46" x2="51" y2="20" gradientUnits="userSpaceOnUse"><stop stop-color="#32b9a8"/><stop offset="1" stop-color="#ff7c6c"/></linearGradient></defs>
+  <path d="M34.8 9.1c8.7-6.7 20.2-1.7 21 8.2.8 10-9.4 19.6-24.2 33.4C16.8 37.5 6.4 28.5 8.2 18.4 10 8.2 21.1 4.6 29.4 11.7l2.3 2z" fill="url(#petal)"/>
+  <path d="M27.7 15.5c-2.4 5.2-1.9 10.2 2 14.6-6.8.2-10.7 4.6-9.7 10.5.8 4.8 5 7.9 10.5 8.4-3.8-4.1-3.3-7.6-.1-11.1 3-3.3 6.2-5.3 6.6-9.8.5-5.3-3.6-9.4-9.3-12.6z" fill="white" opacity=".95"/>
+  <path d="M31.7 30.1c4.8-2.5 9.1-2.2 11.7.7 3.9 4.4 1.3 11.5-5.3 14.9-3.4 1.8-6.3 2.7-9.1 3.3 3-3.3 3.8-6.8 2.7-10.3-.9-2.7-1.8-5.1 0-8.6z" fill="url(#cut)"/>
+</svg>
+
