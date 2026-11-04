@@ -12,12 +12,7 @@ const demo = {
 const form = document.querySelector('[data-checkout-form]');
 const status = document.querySelector('[data-checkout-status]');
 const button = document.querySelector('[data-pay-button]');
-const demoFill = document.createElement('button');
-demoFill.type = 'button';
-demoFill.className = 'button button-light';
-demoFill.textContent = 'Fyll inn demodata';
-demoFill.style.marginBottom = '20px';
-form.before(demoFill);
+const demoFill = document.querySelector('[data-fill-demo]');
 demoFill.addEventListener('click', () => {
   const details = { name: 'Demo Kunde', email: 'demo@example.com', phone: '', address: 'Eksempelveien 1', postal_code: '7650', city: 'Verdal' };
   for (const [name, value] of Object.entries(details)) {
