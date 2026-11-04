@@ -41,14 +41,19 @@ async function loadCart() {
   else {
     const { data, error } = await db.from('products').select('id,name,price_ore,is_published,is_demo').in('id', lines.map(line => line.id));
     if (error || !data || data.length !== lines.length || data.some(item => !item.is_published)) throw new Error('Kunne ikke hente produktene i handlekurven.');
-    demoMode = data.some(item => item.is_demo);
+    demoMode = false;
     rows = lines.map(line => ({ ...line, ...data.find(item => item.id === line.id) }));
   }
   const total = rows.reduce((sum, row) => sum + row.price_ore * row.quantity, 0);
   items.innerHTML = rows.map(row => `<div class="summary-item"><span>${escapeHtml(row.name)} <small>× ${row.quantity}</small></span><strong>${money(row.price_ore * row.quantity)}</strong></div>`).join('');
   document.querySelector('[data-checkout-total]').textContent = money(total);
   if (demoMode) { document.querySelector('[data-demo-notice]').hidden = false; button.textContent = 'Demo: ingen betaling'; }
-  else document.querySelector('[data-demo-notice]').hidden = true;
+  else {
+    const notice = document.querySelector('[data-demo-notice]');
+    notice.hidden = false;
+    notice.textContent = 'Kun testbetaling i sandbox. Alle varer er eksempler, og ingen varer leveres. Bruk bare testkort.';
+    button.innerHTML = 'Fortsett til testbetaling <span>→</span>';
+  }
 }
 
 form.addEventListener('submit', async event => {
