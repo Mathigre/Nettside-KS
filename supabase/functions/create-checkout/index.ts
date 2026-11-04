@@ -67,7 +67,8 @@ Deno.serve(async request => {
       const params = new URLSearchParams({ mode: "payment", customer_email: order.customer_email,
         success_url: `${base}/checkout-result.html?order=${order.id}`, cancel_url: `${base}/checkout.html?cancelled=1`,
         client_reference_id: order.id, "metadata[order_id]": order.id, "payment_intent_data[metadata][order_id]": order.id,
-        "phone_number_collection[enabled]": "true" });
+        "phone_number_collection[enabled]": "true",
+        "custom_text[submit][message]": "DEMOBETALING – ingen ekte penger belastes. Testkort: 4242 4242 4242 4242 · Utløp: 12/30 · CVC: 123 · Navn: Demo Kunde. Ingen varer leveres." });
       orderItems.forEach((item, index) => {
         params.set(`line_items[${index}][price_data][currency]`, "nok");
         params.set(`line_items[${index}][price_data][unit_amount]`, String(item.unit_price_ore));
@@ -105,3 +106,4 @@ Deno.serve(async request => {
     return reply({ error: "Betalingen kunne ikke startes. Kontroller testoppsettet og prøv igjen." }, 502);
   }
 });
+
