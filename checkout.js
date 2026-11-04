@@ -12,6 +12,21 @@ const demo = {
 const form = document.querySelector('[data-checkout-form]');
 const status = document.querySelector('[data-checkout-status]');
 const button = document.querySelector('[data-pay-button]');
+const demoFill = document.createElement('button');
+demoFill.type = 'button';
+demoFill.className = 'button button-light';
+demoFill.textContent = 'Fyll inn demodata';
+demoFill.style.marginBottom = '20px';
+form.before(demoFill);
+demoFill.addEventListener('click', () => {
+  const details = { name: 'Demo Kunde', email: 'demo@example.com', phone: '', address: 'Eksempelveien 1', postal_code: '7650', city: 'Verdal' };
+  for (const [name, value] of Object.entries(details)) {
+    form.elements[name].value = value;
+    form.elements[name].dispatchEvent(new Event('input', { bubbles: true }));
+  }
+  form.querySelector('[name="provider"][value="stripe"]').checked = true;
+  status.textContent = 'Fiktive kontaktopplysninger er fylt inn. Ingen vare leveres ved testkjøp.';
+});
 const money = value => new Intl.NumberFormat('nb-NO', { style: 'currency', currency: 'NOK', maximumFractionDigits: 0 }).format(value / 100);
 const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]);
 let rows = [];
