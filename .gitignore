@@ -1,0 +1,8 @@
+.cf-public/
+.wrangler/
+node_modules/
+.env
+.env.*
+!.env.example
+.site-publish/
+.site-publish*.tar.gz
