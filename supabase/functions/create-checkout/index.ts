@@ -7,13 +7,14 @@ const service = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABA
 const startRate = new Map<string, { count: number; reset: number }>();
 
 async function vippsToken() {
+  for (const name of ["VIPPS_CLIENT_ID","VIPPS_CLIENT_SECRET","VIPPS_SUBSCRIPTION_KEY","VIPPS_MSN"]) { const value = Deno.env.get(name) || ""; if (!/^[\x21-\x7e]+$/.test(value.trim())) throw new Error(`Vipps: ${name} har ugyldige tegn eller mellomrom. Kopier nøkkelen på nytt.`); }
   const api = Deno.env.get("VIPPS_API_URL") || "https://apitest.vipps.no";
   const response = await fetch(`${api}/accesstoken/get`, { method: "POST", headers: {
-    "client_id": Deno.env.get("VIPPS_CLIENT_ID")!, "client_secret": Deno.env.get("VIPPS_CLIENT_SECRET")!,
+    "client_id": Deno.env.get("VIPPS_CLIENT_ID")!.trim(), "client_secret": Deno.env.get("VIPPS_CLIENT_SECRET")!.trim(),
     "Ocp-Apim-Subscription-Key": Deno.env.get("VIPPS_SUBSCRIPTION_KEY")!,
   } });
-  const data = await response.json();
-  if (!response.ok || !data.access_token) throw new Error("Vipps authentication failed");
+  const data = await response.json().catch(() => { throw new Error(`Vipps authentication returned non-JSON (HTTP ${response.status})`); });
+  if (!response.ok || !data.access_token) throw new Error(`Vipps authentication failed (HTTP ${response.status})`);
   return data.access_token as string;
 }
 
@@ -107,13 +108,14 @@ Deno.serve(async request => {
     }, body: JSON.stringify({ amount: { currency: "NOK", value: order.total_ore }, paymentMethod: { type: "WALLET" },
       reference, userFlow: "WEB_REDIRECT", returnUrl: `${base}/checkout-result.html?order=${order.id}`,
       paymentDescription: `Hjertekraft ordre ${order.order_number}` }) });
-    const payment = await response.json();
-    if (!response.ok || !payment.redirectUrl) throw new Error("Vipps could not create payment");
+    const payment = await response.json().catch(() => { throw new Error(`Vipps payment returned non-JSON (HTTP ${response.status})`); });
+    if (!response.ok || !payment.redirectUrl) throw new Error(`Vipps payment creation failed (HTTP ${response.status}, code ${String(payment.type || payment.errorCode || "unknown").replace(/[^a-zA-Z0-9:/._-]/g, "").slice(0,160)})`);
     await service.from("orders").update({ provider_reference: reference, updated_at: new Date().toISOString() }).eq("id", orderId);
     return reply({ url: payment.redirectUrl });
-  } catch {
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : "Payment setup failed");
     await service.rpc("release_pending_order", { p_order_id: orderId, p_status: "failed" });
-    return reply({ error: "Betalingen kunne ikke startes. Kontroller testoppsettet og prøv igjen." }, 502);
+    return reply({ error: provider === "vipps" && error instanceof Error && error.message.startsWith("Vipps") ? error.message : "Betalingen kunne ikke startes. Kontroller testoppsettet og prøv igjen." }, 502);
   }
 });
 
