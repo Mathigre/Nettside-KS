@@ -32,7 +32,7 @@ async function loadProducts() {
   const list = document.querySelector('[data-product-list]');
   const { data, error } = await db.from('products').select('id,name,price_ore,is_published,is_demo,stock_quantity').order('created_at', { ascending: false });
   if (error) { list.innerHTML = '<p>Kunne ikke hente produkter.</p>'; return; }
-  list.innerHTML = data.length ? data.map(row => `<div class="admin-row"><div><strong>${escapeHtml(row.name)}</strong><small>${new Intl.NumberFormat('nb-NO').format(row.price_ore / 100)} kr · ${row.is_demo ? 'Eksempelvare' : row.is_published ? 'Synlig' : 'Skjult'} · ${row.stock_quantity === null ? 'Lager ikke angitt' : `${row.stock_quantity} på lager`}</small></div><span class="admin-row-actions"><button data-edit-product="${row.id}">Rediger</button><button data-delete-product="${row.id}">Slett</button></span></div>`).join('') : '<p>Ingen produkter ennå. Legg til det første når dere har valgt hva som skal selges.</p>';
+  list.innerHTML = data.length ? data.map(row => `<div class="admin-row"><div><strong>${escapeHtml(row.name)}</strong><small>${new Intl.NumberFormat('nb-NO').format(row.price_ore / 100)} kr · ${(row.is_demo ? 'Demo · ' : '') + (row.is_published ? 'Synlig' : 'Skjult')} · ${row.stock_quantity === null ? 'Lager ikke angitt' : `${row.stock_quantity} på lager`}</small></div><span class="admin-row-actions"><button data-edit-product="${row.id}">Rediger</button><button data-delete-product="${row.id}">Slett</button></span></div>`).join('') : '<p>Ingen produkter ennå. Legg til det første når dere har valgt hva som skal selges.</p>';
 }
 async function openProduct(id = '') {
   productForm.hidden = false; productStatus.textContent = ''; productForm.reset(); productForm.elements.id.value = id;
