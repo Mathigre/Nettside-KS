@@ -47,7 +47,7 @@ demoFill.addEventListener('click', () => {
   showTestCards();
   status.textContent = 'Fiktive kontaktopplysninger er fylt inn. Ingen vare leveres ved testkjøp.';
 });
-const money = value => new Intl.NumberFormat('nb-NO', { style: 'currency', currency: 'NOK', maximumFractionDigits: 0 }).format(value / 100);
+const money = value => new Intl.NumberFormat('nb-NO', { style: 'currency', currency: 'NOK', maximumFractionDigits: 2 }).format(value / 100);
 const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]);
 let rows = [];
 let demoMode = true;
