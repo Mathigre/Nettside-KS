@@ -31,8 +31,8 @@ export default {
       const relevant = knowledge.map(row => ({ row, score: terms.filter(term => `${row.question} ${row.answer}`.toLowerCase().includes(term)).length })).filter(x => x.score).sort((a,b) => b.score-a.score).slice(0,4).map(x => x.row);
       const answers = {
         'hva er hjertekraft': 'Hjertekraft er foreløpig et forslag til en nettbutikk med hvit bakgrunn og farger inspirert av logoen. Sortimentet er ikke valgt ennå, og varene som vises er eksempler.',
-        'hvordan prøver jeg testbetaling': 'Legg bare «Stripe testbetaling – ingen vare leveres» i handlekurven, gå til kassen og velg kort. På Stripe sin testside kan du bruke testkort 4242 4242 4242 4242, en framtidig utløpsdato og tre vilkårlige CVC-sifre. Ingen ekte vare leveres; skriv aldri kortopplysninger i chatten.',
-        'er produktene ekte': 'Varene i denne demoen er eksempelinnhold, og vanlig kjøp av dem er sperret. Det egne Stripe-testproduktet brukes kun til å prøve betalingsflyten og innebærer ingen levering.',
+        'hvordan prøver jeg testbetaling': 'Legg ønskede eksempelvarer i handlekurven, gå til kassen og velg kort. På Stripe sin testside kan du bruke testkort 4242 4242 4242 4242, en framtidig utløpsdato og tre vilkårlige CVC-sifre. Ingen ekte vare leveres; skriv aldri kortopplysninger i chatten.',
+        'er produktene ekte': 'Varene i denne demoen er eksempelinnhold. Alle kan prøves med Stripe-testbetaling, uten ekte belastning eller levering.',
         'hva kan jeg gjøre i admin': 'En innlogget administrator kan administrere produkter, priser, lager, kategorier, produktbilder, kontaktmeldinger og ordrestatus. Chatten har ikke tilgang til admin eller kundedata.',
         'hvordan kontakter jeg dere': 'Bruk kontaktskjemaet på kontaktsiden. Meldingen lagres for behandling i admin; jeg kan ikke love en bestemt svartid.',
       };
