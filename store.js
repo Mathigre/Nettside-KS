@@ -34,7 +34,7 @@ function readCart() {
   catch { return []; }
 }
 function saveCart() { localStorage.setItem(cartKey, JSON.stringify(cart)); renderCart(); }
-function money(amount) { return new Intl.NumberFormat('nb-NO', { style: 'currency', currency: 'NOK', maximumFractionDigits: 0 }).format(amount / 100); }
+function money(amount) { return new Intl.NumberFormat('nb-NO', { style: 'currency', currency: 'NOK', maximumFractionDigits: 2 }).format(amount / 100); }
 function escapeHtml(value) { return String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]); }
 function visibleProducts() {
   return products.filter(item => (selectedCategory === 'all' || item.category_id === selectedCategory) && (!query || `${item.name} ${item.short_description || ''}`.toLowerCase().includes(query)));
