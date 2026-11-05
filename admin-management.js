@@ -1,6 +1,6 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
-import { STORE_CONFIG } from './config.js';
-const db=createClient(STORE_CONFIG.supabaseUrl,STORE_CONFIG.supabasePublishableKey);
+import { db } from './supabase-client.js';
+
+
 const e=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const money=v=>new Intl.NumberFormat('nb-NO',{style:'currency',currency:'NOK'}).format((v||0)/100);
 const date=v=>v?new Date(v).toLocaleString('nb-NO'):'—';
