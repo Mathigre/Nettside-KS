@@ -59,10 +59,17 @@ async function loadCart() {
   demoMode = lines.some(line => line.id.startsWith('demo-'));
   if (demoMode) rows = lines.filter(line => demo[line.id]).map(line => ({ ...line, ...demo[line.id] }));
   else {
-    const { data, error } = await db.from('products').select('id,name,price_ore,is_published,is_demo').in('id', lines.map(line => line.id));
-    if (error || !data || data.length !== lines.length || data.some(item => !item.is_published)) throw new Error('Kunne ikke hente produktene i handlekurven.');
+    const ids = [...new Set(lines.map(line => line.id))];
+    const { data, error } = await db.from('products').select('id,name,price_ore,is_published,is_demo').in('id', ids);
+    if (error || !data || data.length !== ids.length || data.some(item => !item.is_published)) throw new Error('Kunne ikke hente produktene i handlekurven.');
     demoMode = false;
     rows = lines.map(line => ({ ...line, ...data.find(item => item.id === line.id) }));
+    const variantIds = rows.map(row => row.variant_id).filter(Boolean);
+    if (variantIds.length) {
+      const { data: variants, error: variantError } = await db.from('product_variants').select('*').in('id', variantIds);
+      if (variantError) throw new Error('Kunne ikke hente variantene.');
+      rows = rows.map(row => { if (!row.variant_id) return row; const variant = variants.find(v => v.id === row.variant_id && v.product_id === row.id); if (!variant) throw new Error('En variant er ikke lenger tilgjengelig. Oppdater handlekurven.'); return { ...row, name: `${row.name} · ${variant.name}`, price_ore: variant.price_ore ?? row.price_ore }; });
+    }
   }
   const total = rows.reduce((sum, row) => sum + row.price_ore * row.quantity, 0);
   items.innerHTML = rows.map(row => `<div class="summary-item"><span>${escapeHtml(row.name)} <small>× ${row.quantity}</small></span><strong>${money(row.price_ore * row.quantity)}</strong></div>`).join('');
@@ -85,9 +92,10 @@ form.addEventListener('submit', async event => {
   const { data, error } = await db.functions.invoke('create-checkout', {
     body: {
       provider: values.get('provider'),
+      coupon_code: values.get('coupon_code') || null,
       customer: { name: values.get('name'), email: values.get('email'), phone: values.get('phone') || null },
       shipping: { address: values.get('address'), postal_code: values.get('postal_code'), city: values.get('city'), country: 'NO' },
-      items: rows.map(row => ({ product_id: row.id, quantity: row.quantity })),
+      items: rows.map(row => ({ product_id: row.id, quantity: row.quantity, variant_id: row.variant_id || null })),
     },
   });
   if (error || !data?.url) {

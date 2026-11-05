@@ -40,7 +40,7 @@ Deno.serve(async request => {
   if ((provider !== "stripe" && provider !== "vipps") || !customer || !shipping || !Array.isArray(items) || items.length < 1 || items.length > 40) return reply({ error: "Kontroller bestillingsdetaljene." }, 400);
   if (![customer.name, customer.email, shipping.address, shipping.postal_code, shipping.city].every(value => typeof value === "string" && value.trim().length > 0)) return reply({ error: "Fyll ut navn, e-post og leveringsadresse." }, 400);
   if (shipping.country !== "NO") return reply({ error: "Levering er foreløpig bare satt opp for Norge." }, 400);
-  const lines = items.map((item: Record<string, unknown>) => ({ product_id: item.product_id, quantity: item.quantity }));
+  const lines = items.map((item: Record<string, unknown>) => ({ product_id: item.product_id, quantity: item.quantity, variant_id: typeof item.variant_id === 'string' ? item.variant_id : null }));
   if (lines.some(line => typeof line.product_id !== "string" || !Number.isInteger(line.quantity) || Number(line.quantity) < 1 || Number(line.quantity) > 99)) return reply({ error: "Ugyldig handlekurv." }, 400);
   const shippingOre = Number(Deno.env.get("SHIPPING_FLAT_ORE"));
   if (!Number.isSafeInteger(shippingOre) || shippingOre < 0) return reply({ error: "Fraktpris må konfigureres i Supabase først." }, 503);
@@ -53,11 +53,11 @@ Deno.serve(async request => {
     p_customer_name: String(customer.name).trim(), p_customer_email: String(customer.email).trim(),
     p_customer_phone: typeof customer.phone === "string" ? customer.phone.trim() : null,
     p_shipping_address: { address: String(shipping.address).trim(), postal_code: String(shipping.postal_code).trim(), city: String(shipping.city).trim(), country: "NO" },
-    p_shipping_ore: shippingOre, p_payment_provider: provider, p_items: lines,
+    p_shipping_ore: shippingOre, p_payment_provider: provider, p_items: lines, p_coupon_code: typeof body.coupon_code === 'string' ? body.coupon_code.trim().toUpperCase() : null,
   });
   if (createError || !orderId) return reply({ error: "Produktet er utsolgt eller handlekurven er endret. Oppdater siden og prøv igjen." }, 409);
-  const { data: order, error: orderError } = await service.from("orders").select("id,order_number,total_ore,customer_email").eq("id", orderId).single();
-  const { data: orderItems, error: itemError } = await service.from("order_items").select("product_name,unit_price_ore,quantity").eq("order_id", orderId);
+  const { data: order, error: orderError } = await service.from("orders").select("id,order_number,total_ore,subtotal_ore,discount_ore,customer_email").eq("id", orderId).single();
+  const { data: orderItems, error: itemError } = await service.from("order_items").select("product_name,variant_name,unit_price_ore,quantity").eq("order_id", orderId).order('id');
   if (orderError || itemError || !order || !orderItems?.length) {
     await service.rpc("release_pending_order", { p_order_id: orderId, p_status: "failed" });
     return reply({ error: "Ordren kunne ikke klargjøres." }, 500);
@@ -69,11 +69,21 @@ Deno.serve(async request => {
         client_reference_id: order.id, "metadata[order_id]": order.id, "payment_intent_data[metadata][order_id]": order.id,
         "phone_number_collection[enabled]": "true",
         "custom_text[submit][message]": "DEMOBETALING – ingen ekte penger belastes. Testkort: 4242 4242 4242 4242 · Utløp: 12/30 · CVC: 123 · Navn: Demo Kunde. Ingen varer leveres." });
+      let remainingDiscount = order.discount_ore || 0;
+      const gross = order.subtotal_ore + remainingDiscount;
+      let cumulativeGross = 0;
+      let allocatedDiscount = 0;
       orderItems.forEach((item, index) => {
+        const lineGross = item.unit_price_ore * item.quantity;
+        cumulativeGross += lineGross;
+        const targetDiscount = Math.floor(cumulativeGross * (order.discount_ore || 0) / Math.max(gross, 1));
+        const deduction = targetDiscount - allocatedDiscount;
+        allocatedDiscount = targetDiscount;
+        remainingDiscount -= deduction;
         params.set(`line_items[${index}][price_data][currency]`, "nok");
-        params.set(`line_items[${index}][price_data][unit_amount]`, String(item.unit_price_ore));
-        params.set(`line_items[${index}][price_data][product_data][name]`, item.product_name);
-        params.set(`line_items[${index}][quantity]`, String(item.quantity));
+        params.set(`line_items[${index}][price_data][unit_amount]`, String(lineGross - deduction));
+        params.set(`line_items[${index}][price_data][product_data][name]`, `${item.product_name}${item.variant_name ? ' · ' + item.variant_name : ''} × ${item.quantity}${deduction ? ' (rabatt inkludert)' : ''}`);
+        params.set(`line_items[${index}][quantity]`, '1');
       });
       if (shippingOre > 0) {
         params.set(`line_items[${orderItems.length}][price_data][currency]`, "nok");

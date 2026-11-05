@@ -8,6 +8,10 @@ const countLabel = document.querySelector('[data-product-count]');
 const searchInput = document.querySelector('[data-product-search]');
 const cartKey = 'hjertekraft-cart-v1';
 let products = [];
+let variants = [];
+const lineKey = row => `${row.id}:${row.variant_id || ''}`;
+const variantOf = row => variants.find(v => v.id === row.variant_id);
+const unitPrice = row => variantOf(row)?.price_ore ?? products.find(p => p.id === row.id)?.price_ore ?? 0;
 let categories = [];
 let demoMode = false;
 let selectedCategory = 'all';
@@ -48,7 +52,9 @@ function renderProducts() {
   productGrid.innerHTML = rows.map(item => {
     const image = Array.isArray(item.images) && item.images[0] ? `<img src="${escapeHtml(item.images[0])}" alt="${escapeHtml(item.name)}" loading="lazy">` : `<span class="product-placeholder" aria-hidden="true">H</span>`;
     const stock = item.stock_quantity === null || item.stock_quantity > 0;
-    return `<article class="product-card"><div class="product-visual">${image}${item.demo ? '<span class="product-badge">Demo · eksempelpris</span>' : item.is_featured ? '<span class="product-badge">Utvalgt</span>' : ''}</div><div class="product-details"><h3>${escapeHtml(item.name)}</h3><p>${escapeHtml(item.short_description || '')}</p><div class="product-price"><strong>${money(item.price_ore)}</strong><button type="button" data-add-to-cart="${item.id}" ${stock ? '' : 'disabled'}>${stock ? 'Legg i kurv +' : 'Utsolgt'}</button></div></div></article>`;
+    const options = variants.filter(v => v.product_id === item.id);
+    const selector = options.length ? `<label style="display:block;font-size:12px">Velg variant<select data-product-variant="${item.id}" style="width:100%;padding:10px;margin:8px 0">${options.map(v => `<option value="${v.id}" ${v.stock_quantity ? '' : 'disabled'}>${escapeHtml(v.name)} · ${money(v.price_ore ?? item.price_ore)}${v.stock_quantity ? '' : ' · utsolgt'}</option>`).join('')}</select></label>` : '';
+    return `<article class="product-card"><div class="product-visual">${image}${item.demo ? '<span class="product-badge">Demo · eksempelpris</span>' : item.is_featured ? '<span class="product-badge">Utvalgt</span>' : ''}</div><div class="product-details"><h3>${escapeHtml(item.name)}</h3><p>${escapeHtml(item.short_description || '')}</p>${selector}<div class="product-price"><strong>${money(item.price_ore)}</strong><button type="button" data-add-to-cart="${item.id}" ${stock && (!options.length || options.some(v=>v.stock_quantity>0)) ? '' : 'disabled'}>${stock ? 'Legg i kurv +' : 'Utsolgt'}</button></div></div></article>`;
   }).join('');
 }
 function renderCategories() {
@@ -62,19 +68,21 @@ function renderCart() {
   const checkout = document.querySelector('[data-checkout]');
   const rows = cart.map(line => ({ ...line, product: products.find(item => item.id === line.id) })).filter(line => line.product);
   const count = rows.reduce((sum, row) => sum + row.quantity, 0);
-  const total = rows.reduce((sum, row) => sum + row.product.price_ore * row.quantity, 0);
+  const total = rows.reduce((sum, row) => sum + unitPrice(row) * row.quantity, 0);
   if (countEl) countEl.textContent = String(count);
   if (totalEl) totalEl.textContent = money(total);
-  if (itemsEl) itemsEl.innerHTML = rows.length ? rows.map(row => `<div class="cart-item"><div><strong>${escapeHtml(row.product.name)}</strong><small>${money(row.product.price_ore)} per stk.</small></div><div class="cart-quantity"><button data-quantity="${row.id}" data-delta="-1" aria-label="Fjern én ${escapeHtml(row.product.name)}">−</button><span>${row.quantity}</span><button data-quantity="${row.id}" data-delta="1" aria-label="Legg til én ${escapeHtml(row.product.name)}">+</button></div></div>`).join('') : '<div class="cart-empty">Kurven er tom ennå.<br>Finn noe du liker i butikken.</div>';
+  if (itemsEl) itemsEl.innerHTML = rows.length ? rows.map(row => `<div class="cart-item"><div><strong>${escapeHtml(row.product.name)}${row.variant_id ? ' · ' + escapeHtml(variantOf(row)?.name || '') : ''}</strong><small>${money(unitPrice(row))} per stk.</small></div><div class="cart-quantity"><button data-quantity="${lineKey(row)}" data-delta="-1" aria-label="Fjern én ${escapeHtml(row.product.name)}">−</button><span>${row.quantity}</span><button data-quantity="${lineKey(row)}" data-delta="1" aria-label="Legg til én ${escapeHtml(row.product.name)}">+</button></div></div>`).join('') : '<div class="cart-empty">Kurven er tom ennå.<br>Finn noe du liker i butikken.</div>';
   if (checkout) checkout.disabled = !rows.length;
 }
 async function loadCatalog() {
   if (!productGrid) return;
-  const [categoryResult, productResult] = await Promise.all([
+  const [categoryResult, productResult, variantResult] = await Promise.all([
     db.from('categories').select('id,name,slug,sort_order').order('sort_order'),
     db.from('products').select('id,name,slug,short_description,price_ore,images,stock_quantity,is_featured,is_demo,category_id').eq('is_published', true).order('created_at', { ascending: false }),
+    db.from('product_variants').select('*').eq('is_active', true),
   ]);
   if (!categoryResult.error) categories = categoryResult.data || [];
+  if (!variantResult.error) variants = variantResult.data || [];
   if (!productResult.error) {
     const published = productResult.data || [];
     const realProducts = published.filter(item => !item.is_demo);
@@ -93,14 +101,18 @@ document.addEventListener('click', event => {
   if (add) {
     const item = products.find(product => product.id === add.dataset.addToCart);
     if (!item) return;
-    const line = cart.find(row => row.id === item.id);
-    if (line && line.quantity < 99) line.quantity += 1; else if (!line) cart.push({ id: item.id, quantity: 1 });
+    const variant_id = document.querySelector(`[data-product-variant="${item.id}"]`)?.value || null;
+    const selected = variants.find(v => v.id === variant_id);
+    const line = cart.find(row => row.id === item.id && (row.variant_id || null) === variant_id);
+    const maximum = Math.min(99, selected?.stock_quantity ?? 99, item.stock_quantity ?? 99);
+    if ((line?.quantity || 0) >= maximum) return;
+    if (line) line.quantity += 1; else cart.push({ id: item.id, variant_id, quantity: 1 });
     saveCart();
   }
   const quantity = event.target.closest('[data-quantity]');
   if (quantity) {
-    const line = cart.find(row => row.id === quantity.dataset.quantity);
-    if (line) line.quantity += Number(quantity.dataset.delta);
+    const line = cart.find(row => lineKey(row) === quantity.dataset.quantity);
+    if (line) { const max = Math.min(99, variantOf(line)?.stock_quantity ?? 99, products.find(p => p.id === line.id)?.stock_quantity ?? 99); line.quantity = Math.min(max, line.quantity + Number(quantity.dataset.delta)); }
     cart = cart.filter(row => row.quantity > 0); saveCart();
   }
   if (event.target.closest('[data-cart-open]')) setCartOpen(true);
