@@ -25,13 +25,24 @@ Deno.serve(async request => {
   let event: Record<string, any>;
   try { event = JSON.parse(payload); } catch { return new Response("Invalid payload", { status: 400 }); }
   const session = event.data?.object;
+  if (!['checkout.session.completed','checkout.session.async_payment_succeeded','checkout.session.expired','checkout.session.async_payment_failed'].includes(event.type)) return Response.json({ received: true });
+  if (event.livemode !== false || session?.livemode !== false) return new Response('Only sandbox events accepted', { status: 400 });
   if (typeof session?.metadata?.order_id === "string" && session.client_reference_id === session.metadata.order_id) {
     const orderId = session.metadata.order_id;
+    const { data: order, error } = await service.from('orders').select('payment_provider,provider_reference,total_ore,payment_status').eq('id',orderId).maybeSingle();
+    if (error) return new Response('Order lookup failed', { status: 500 });
+    if (!order) return Response.json({ received: true });
+    if (!order.provider_reference) return new Response('Order setup pending', { status: 503 });
+    if (order.payment_provider !== 'stripe' || order.provider_reference !== session.id || session.currency !== 'nok' || session.amount_total !== order.total_ore) return new Response('Payment does not match order', { status: 400 });
+    if (order.payment_status === 'refunded') return Response.json({ received: true });
     if (["checkout.session.completed", "checkout.session.async_payment_succeeded"].includes(event.type) && session.payment_status === "paid") {
-      await service.rpc("set_order_payment_status", { p_order_id: orderId, p_status: "paid", p_reference: session.id });
+      const { error } = await service.rpc("set_order_payment_status", { p_order_id: orderId, p_status: "paid", p_reference: session.id });
+      if (error) return new Response('Payment update failed', { status: 500 });
     } else if (event.type === "checkout.session.expired" || event.type === "checkout.session.async_payment_failed") {
-      await service.rpc("release_pending_order", { p_order_id: orderId, p_status: "failed" });
+      const { error } = await service.rpc("release_pending_order", { p_order_id: orderId, p_status: "failed" });
+      if (error) return new Response('Stock release failed', { status: 500 });
     }
   }
   return Response.json({ received: true });
 });
+
