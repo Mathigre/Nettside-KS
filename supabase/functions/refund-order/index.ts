@@ -39,7 +39,13 @@ Deno.serve(async req=>{
   }else throw Error('Ukjent betalingsleverandør.');
   const update=await db.from('order_returns').update({provider_refund_id:refundId,refund_status:succeeded?'succeeded':'processing',updated_at:new Date().toISOString()}).eq('id',r.id);if(update.error)throw update.error;
   await db.from('order_history').insert({order_id:o.id,actor_id:user.id,event:'Refusjon opprettet',details:{amount_ore:r.amount_ore,provider_refund_id:refundId}});
-  if(succeeded&&(others||[]).reduce((s,x)=>s+x.amount_ore,0)+r.amount_ore===o.total_ore)await db.rpc('set_order_payment_status',{p_order_id:o.id,p_status:'refunded',p_reference:o.provider_reference});
+  if(succeeded){
+   const {data:completed,error:sumError}=await db.from('order_returns').select('amount_ore').eq('order_id',o.id).eq('refund_status','succeeded');
+   if(sumError)throw sumError;
+   if((completed||[]).reduce((s,x)=>s+x.amount_ore,0)===o.total_ore){
+    const {error}=await db.rpc('set_order_payment_status',{p_order_id:o.id,p_status:'refunded',p_reference:o.provider_reference});if(error)throw error;
+   }
+  }
   return reply({ok:true});
  }catch(error){if(returnId)await db.from('order_returns').update({refund_status:'failed',updated_at:new Date().toISOString()}).eq('id',returnId).eq('refund_status','processing');return reply({error:error instanceof Error?error.message:'Refusjonen feilet.'},502);}
 });
