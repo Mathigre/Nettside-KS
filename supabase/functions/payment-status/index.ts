@@ -14,17 +14,18 @@ Deno.serve(async request => {
   let orderId = "";
   try { orderId = String((await request.json()).order_id || ""); } catch { return reply({ error: "Invalid request" }, 400); }
   if (!/^[0-9a-f-]{36}$/i.test(orderId)) return reply({ error: "Invalid order" }, 400);
-  const { data: order } = await service.from("orders").select("id,order_number,payment_provider,payment_status,provider_reference").eq("id", orderId).maybeSingle();
+  const { data: order } = await service.from("orders").select("id,order_number,payment_provider,payment_status,provider_reference,total_ore").eq("id", orderId).maybeSingle();
   if (!order) return reply({ error: "Order not found" }, 404);
   if (order.payment_status === "pending" && order.provider_reference) {
     try {
-      if (order.payment_provider === "stripe" && Deno.env.get("STRIPE_SECRET_KEY")) {
+      if (order.payment_provider === "stripe" && /^(sk|rk)_test_/.test(Deno.env.get("STRIPE_SECRET_KEY") || "")) {
         const response = await fetch(`https://api.stripe.com/v1/checkout/sessions/${encodeURIComponent(order.provider_reference)}`, { headers: { Authorization: `Bearer ${Deno.env.get("STRIPE_SECRET_KEY")}` } });
         const session = await response.json();
-        if (response.ok && session.metadata?.order_id === order.id && session.payment_status === "paid") await service.rpc("set_order_payment_status", { p_order_id: order.id, p_status: "paid", p_reference: order.provider_reference });
+        if (response.ok && session.livemode === false && session.currency === 'nok' && session.amount_total === order.total_ore && session.metadata?.order_id === order.id && session.payment_status === "paid") await service.rpc("set_order_payment_status", { p_order_id: order.id, p_status: "paid", p_reference: order.provider_reference });
         if (response.ok && session.status === "expired") await service.rpc("release_pending_order", { p_order_id: order.id, p_status: "failed" });
       } else if (order.payment_provider === "vipps" && Deno.env.get("VIPPS_CLIENT_ID")) {
         const api = Deno.env.get("VIPPS_API_URL") || "https://apitest.vipps.no";
+        if (api !== 'https://apitest.vipps.no') throw Error('Only sandbox allowed');
         const token = await vippsToken();
         const response = await fetch(`${api}/epayment/v1/payments/${encodeURIComponent(order.provider_reference)}`, { headers: { Authorization: `Bearer ${token}`, "Ocp-Apim-Subscription-Key": Deno.env.get("VIPPS_SUBSCRIPTION_KEY")!, "Merchant-Serial-Number": Deno.env.get("VIPPS_MSN")! } });
         const payment = await response.json();
@@ -39,3 +40,4 @@ Deno.serve(async request => {
   const { data: latest } = await service.from("orders").select("order_number,payment_status").eq("id", orderId).single();
   return reply({ order_number: latest?.order_number, status: latest?.payment_status || order.payment_status });
 });
+
